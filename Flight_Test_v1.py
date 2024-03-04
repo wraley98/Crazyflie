@@ -44,7 +44,7 @@ position_estimate = [0 , 0 , 0]
 def createLog():
         # prepares log data
         logconf = LogConfig(name = 'Position', period_in_ms=10)
-        """
+       
         logconf.add_variable('kalman.stateX' , 'float')
         logconf.add_variable('kalman.stateY' , 'float')
         logconf.add_variable('kalman.stateZ' , 'float')
@@ -52,7 +52,7 @@ def createLog():
         logconf.add_variable('stateEstimate.x' , 'float')
         logconf.add_variable('stateEstimate.y' , 'float')
         logconf.add_variable('stateEstimate.z' , 'float')
-       
+        """
         scf.cf.log.add_config(logconf)
         # prints position data
         logconf.data_received_cb.add_callback(log_pos_callback)
@@ -86,7 +86,8 @@ def flyTest(pc , xLocation , yLocation , zLocation , logConf , speed):
     pc._x = position_estimate[0]
     pc._y = position_estimate[1]
     pc._z = position_estimate[2]
-    
+    # height to land at
+    lh = pc._y
 
     # Sets flying status to off
     pc._is_flying = False
@@ -127,17 +128,34 @@ def flyTest(pc , xLocation , yLocation , zLocation , logConf , speed):
     
     # landing sequence
     print("Landing")
-    pc.go_to(2.4, 2 , 0.7 , speed)
+    pc.go_to(2.4, 2 , 0.3 , speed)
     time.sleep(2)
     pc._is_flying = True
-    pc.land(velocity = speed)
+    pc.land(velocity = 0.1 , landing_height = lh)
     
+def hold(pc , xLocation , yLocation , zLocation , logConf , speed):
+     # Sets Position
+    pc._x = position_estimate[0]
+    pc._y = position_estimate[1]
+    pc._z = position_estimate[2]
+    
+
+    # Sets flying status to off
+    pc._is_flying = False
+
+    # Take Off
+    print("Taking Off")
+    #pc.take_off(height=1.0 , velocity = speed)
+    pc.go_to(2.97 , 2.86 , 1 , speed)
+    time.sleep(5)
+    pc._is_flying = True
+    pc.land(velocity = 0.1)
 
 # Sets location to current estimate
 def log_pos_callback(timestamp, data, logconf):
     
     #print(data)
-    """
+   
     position_estimate[0] = data['kalman.stateX']
     position_estimate[1] = data['kalman.stateY']
     position_estimate[2] = data['kalman.stateZ']
@@ -145,7 +163,7 @@ def log_pos_callback(timestamp, data, logconf):
     position_estimate[0] = data['stateEstimate.x']
     position_estimate[1] = data['stateEstimate.y']
     position_estimate[2] = data['stateEstimate.z']
-
+    """
     xLocation.append(position_estimate[0])
     yLocation.append(position_estimate[1])
     zLocation.append(position_estimate[2])   
@@ -209,28 +227,26 @@ if __name__ == '__main__':
         scf.cf.param.set_value('stabilizer.estimator' , '3')
 
         # Creates file for test
-        fileName = '5.xlsx'
+        fileName = '9.xlsx'
         createWB(fileName)
         
         # Sets speed
-        speed = 10
+        speed = 5
         logConf = setPos(logConf)
         print(position_estimate)
         logConf.start()
         time.sleep(1)
         
-   
+        """
         with PositionHlCommander(scf) as pc:
-            flyTest(pc , xLocation , yLocation , zLocation , logConf ,speed)
-       
+            #flyTest(pc , xLocation , yLocation , zLocation , logConf ,speed)
+            hold(pc , xLocation , yLocation , zLocation , logConf , speed)
+        """
         time.sleep(3)
         # Stop Logging Data
         logConf.stop()
 
        
-        
-      
-
     recordData(fileName , xLocation , yLocation , zLocation, "Land")
         
         

@@ -21,7 +21,9 @@ from cflib.crazyflie.log import LogConfig
 from cflib.crazyflie.syncLogger import SyncLogger
 
 # URI to the Crazyflie to connect to 
-uri = uri_helper.uri_from_env(default= 'radio://0/80/2M/E7E7E7E7E7')
+uri1 = uri_helper.uri_from_env(default= 'radio://0/80/2M/E7E7E7E7E7')
+uri2 = uri_helper.uri_from_env(default= 'radio://0/80/2M/E7E7E7E7E6')
+uriList = [uri1 , uri2]
 
 # Only output errors from the logging framework
 logging.basicConfig(level=logging.ERROR)
@@ -102,16 +104,16 @@ if __name__ == '__main__':
     group = "stabilizer"
     name = "estimator"
 
+    for uri in uriList:
+        with SyncCrazyflie(uri , cf=Crazyflie(rw_cache='./cache')) as scf:
 
-    with SyncCrazyflie(uri , cf=Crazyflie(rw_cache='./cache')) as scf:
+            simple_connect()
 
-        simple_connect()
+        # simple_log(scf , lg_stab)
 
-       # simple_log(scf , lg_stab)
+            #simple_log_async(scf , lg_stab)
 
-        #simple_log_async(scf , lg_stab)
-
-        #simple_param_async(scf , group , name)
+            #simple_param_async(scf , group , name)
 
 
 
