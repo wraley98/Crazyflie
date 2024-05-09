@@ -22,23 +22,25 @@ from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
 from cflib.positioning.motion_commander import MotionCommander
 from cflib.positioning.position_hl_commander import PositionHlCommander
 from cflib.utils import uri_helper
-from lpslib.lopoanchor import LoPoAnchor
+from cflib.crazyflie.syncLogger import SyncLogger
 
 
-URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E7E7')
+URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E702')
 deck_atttached_event = Event()
 
 logging.basicConfig(level=logging.ERROR)
 
 # Storage for location data
 
+timeStamp = []
 xLocation = []
 yLocation = []
 zLocation = []
 
+tInitial = 0
+
 position_estimate = [0 , 0 , 0]
 
-#logconf = None
 
 # Creates log
 def createLog():
@@ -95,17 +97,12 @@ def flyTest(pc , xLocation , yLocation , zLocation , logConf , speed):
     # Take Off
     print("Taking Off")
     #pc.take_off(height=1.0 , velocity = speed)
-    pc.go_to(2.4 , 1.0 , 1.0 , speed)
-    
-
-    print("@ Hold")
-    time.sleep(5)
+    pc.go_to(2.34 , 1.45 , 1.0 , speed)
 
     # records Take off data
     logConf.stop()
     recordData(fileName , xLocation , yLocation , zLocation)
-
-
+    
     # resets point and log
     clearLocation(xLocation , yLocation , zLocation)
     logConf = createLog()  
@@ -113,10 +110,9 @@ def flyTest(pc , xLocation , yLocation , zLocation , logConf , speed):
 
     # move
     print("Moving")
-    pc.go_to(2.4, 2 , 1.0 , speed)
+    pc.go_to(2.3, 2.69 , 1.0 , speed)
     
     # Hold
-    time.sleep(5)
     logConf.stop()
     recordData(fileName , xLocation , yLocation , zLocation ,"Move")
 
@@ -128,10 +124,9 @@ def flyTest(pc , xLocation , yLocation , zLocation , logConf , speed):
     
     # landing sequence
     print("Landing")
-    pc.go_to(2.4, 2 , 0.3 , speed)
-    time.sleep(2)
+    pc.go_to(2.3, 2.69 , 0.3 , speed)
     pc._is_flying = True
-    pc.land(velocity = 0.1 , landing_height = lh)
+    pc.land(velocity = speed)
     
 def hold(pc , xLocation , yLocation , zLocation , logConf , speed):
      # Sets Position
@@ -146,15 +141,15 @@ def hold(pc , xLocation , yLocation , zLocation , logConf , speed):
     # Take Off
     print("Taking Off")
     #pc.take_off(height=1.0 , velocity = speed)
-    pc.go_to(2.97 , 2.86 , 1 , speed)
-    time.sleep(5)
+    pc.up(.5)
+    time.sleep(3)
     pc._is_flying = True
     pc.land(velocity = 0.1)
 
 # Sets location to current estimate
 def log_pos_callback(timestamp, data, logconf):
     
-    #print(data)
+   
    
     position_estimate[0] = data['kalman.stateX']
     position_estimate[1] = data['kalman.stateY']
@@ -164,6 +159,8 @@ def log_pos_callback(timestamp, data, logconf):
     position_estimate[1] = data['stateEstimate.y']
     position_estimate[2] = data['stateEstimate.z']
     """
+
+    timeStamp.append(timestamp)
     xLocation.append(position_estimate[0])
     yLocation.append(position_estimate[1])
     zLocation.append(position_estimate[2])   
@@ -189,6 +186,7 @@ def recordData(fileName , x, y, z, sheet = None):
         sheet = doc.create_sheet(sheet)
 
     for i in range(len(x)):
+        
         data = [x[i] , y[i] , z[i]]
         sheet.append(data)
 
@@ -214,6 +212,8 @@ if __name__ == '__main__':
 
         time.sleep(1)
 
+        firstPass = True
+
         # creates log for determining position
         logConf = createLog()        
     
@@ -227,23 +227,45 @@ if __name__ == '__main__':
         scf.cf.param.set_value('stabilizer.estimator' , '3')
 
         # Creates file for test
-        fileName = '9.xlsx'
+        fileName = '5.xlsx'
         createWB(fileName)
         
         # Sets speed
-        speed = 5
+        speed = 0.5
         logConf = setPos(logConf)
         print(position_estimate)
         logConf.start()
-        time.sleep(1)
         
-        """
         with PositionHlCommander(scf) as pc:
             #flyTest(pc , xLocation , yLocation , zLocation , logConf ,speed)
             hold(pc , xLocation , yLocation , zLocation , logConf , speed)
-        """
-        time.sleep(3)
         # Stop Logging Data
+        
+        i = 0
+
+        # Move by hand Test
+        """
+        while(1):
+            if input() == "":
+                logConf.stop()
+               
+                if i == 0:
+                    recordData(fileName , xLocation , yLocation , zLocation)
+                    i += 1
+                elif i == 1:
+                    recordData(fileName , xLocation , yLocation , zLocation ,"Move")
+                    i += 1
+                elif i == 2:
+                    break
+                
+                # resets point and log
+                clearLocation(xLocation , yLocation , zLocation)
+                logConf = createLog()  
+                logConf.start()
+        """     
+               
+
+
         logConf.stop()
 
        
